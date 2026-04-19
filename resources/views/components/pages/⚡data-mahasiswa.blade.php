@@ -16,6 +16,23 @@ new class extends Component {
     public $nama_mahasiswa = '';
     public $nim = '';
     public $id_jurusan = '';
+    public $filterJurusan = '';
+    public $sortBy = 'latest';
+
+    public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterJurusan()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSortBy()
+    {
+        $this->resetPage();
+    }
 
     public function edit($id)
     {
@@ -72,9 +89,23 @@ new class extends Component {
     public function with(): array
     {
         $perPage = max(1, (int) $this->perPage);
+        $query = Mahasiswa::with('jurusan:id,nama_jurusan');
+
+        if ($this->filterJurusan !== '') {
+            $query->where('id_jurusan', $this->filterJurusan);
+        }
+
+        match ($this->sortBy) {
+            'nama_asc' => $query->orderBy('nama'),
+            'nama_desc' => $query->orderByDesc('nama'),
+            'nim_asc' => $query->orderBy('nim'),
+            'nim_desc' => $query->orderByDesc('nim'),
+            'oldest' => $query->oldest(),
+            default => $query->latest(),
+        };
 
         return [
-            'mahasiswa' => Mahasiswa::with('jurusan:id,nama_jurusan')->latest()->paginate($perPage),
+            'mahasiswa' => $query->paginate($perPage),
             'jurusan' => Jurusan::select('id', 'nama_jurusan')->orderBy('nama_jurusan')->get(),
         ];
     }
@@ -182,22 +213,25 @@ new class extends Component {
                             <div class="relative flex-1 sm:w-64">
                                 <span
                                     class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#757682] text-sm">filter_list</span>
-                                <select
+                                <select wire:model.live="filterJurusan"
                                     class="w-full bg-[#f2f4f6] border-none rounded-lg py-2.5 pl-10 pr-4 text-xs font-semibold text-[#191c1e] focus:ring-2 focus:ring-[#435b9f]/30 appearance-none">
-                                    <option>All Departments</option>
-                                    <option>Informatics Engineering</option>
-                                    <option>Visual Communication Design</option>
-                                    <option>Information Systems</option>
+                                    <option value="">Semua Jurusan</option>
+                                    @foreach ($jurusan as $jur)
+                                        <option value="{{ $jur->id }}">{{ $jur->nama_jurusan }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="relative flex-1 sm:w-64">
                                 <span
                                     class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#757682] text-sm">sort_by_alpha</span>
-                                <select
+                                <select wire:model.live="sortBy"
                                     class="w-full bg-[#f2f4f6] border-none rounded-lg py-2.5 pl-10 pr-4 text-xs font-semibold text-[#191c1e] focus:ring-2 focus:ring-[#435b9f]/30 appearance-none">
-                                    <option>Sort by Name</option>
-                                    <option>Sort by NIM</option>
-                                    <option>Sort by Semester</option>
+                                    <option value="latest">Terbaru</option>
+                                    <option value="oldest">Terlama</option>
+                                    <option value="nama_asc">Nama A-Z</option>
+                                    <option value="nama_desc">Nama Z-A</option>
+                                    <option value="nim_asc">NIM Terkecil</option>
+                                    <option value="nim_desc">NIM Terbesar</option>
                                 </select>
                             </div>
                             <div class="relative flex-1 sm:w-64">
