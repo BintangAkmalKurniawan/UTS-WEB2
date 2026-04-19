@@ -1,8 +1,10 @@
 <?php
 
 use Livewire\Component;
+use App\Models\Jurusan;
 use App\Models\Mahasiswa;
 use Livewire\WithPagination;
+use Illuminate\Validation\Rule;
 
 new class extends Component {
     use WithPagination;
@@ -10,11 +12,70 @@ new class extends Component {
     protected $paginationTheme = 'tailwind';
 
     public $perPage = 5;
+    public $editingId = null;
+    public $nama_mahasiswa = '';
+    public $nim = '';
+    public $id_jurusan = '';
+
+    public function edit($id)
+    {
+        $mahasiswa = Mahasiswa::findOrFail($id);
+
+        $this->editingId = $mahasiswa->id;
+        $this->nama_mahasiswa = $mahasiswa->nama;
+        $this->nim = $mahasiswa->nim;
+        $this->id_jurusan = $mahasiswa->id_jurusan;
+        $this->resetValidation();
+    }
+
+    public function update()
+    {
+        $validated = $this->validate([
+            'nama_mahasiswa' => 'required|string|min:3',
+            'nim' => [
+                'required',
+                'numeric',
+                'digits_between:8,15',
+                Rule::unique('mahasiswa', 'nim')->ignore($this->editingId),
+            ],
+            'id_jurusan' => 'required|exists:jurusan,id',
+        ]);
+
+        Mahasiswa::findOrFail($this->editingId)->update([
+            'nama' => $validated['nama_mahasiswa'],
+            'nim' => $validated['nim'],
+            'id_jurusan' => $validated['id_jurusan'],
+        ]);
+
+        $this->cancelEdit();
+        session()->flash('success', 'Data mahasiswa berhasil diperbarui.');
+    }
+
+    public function cancelEdit()
+    {
+        $this->reset(['editingId', 'nama_mahasiswa', 'nim', 'id_jurusan']);
+        $this->resetValidation();
+    }
+
+    public function delete($id)
+    {
+        Mahasiswa::findOrFail($id)->delete();
+
+        if ((int) $this->editingId === (int) $id) {
+            $this->cancelEdit();
+        }
+
+        $this->resetPage();
+        session()->flash('success', 'Data mahasiswa berhasil dihapus.');
+    }
 
     public function with(): array
     {
+        $perPage = max(1, (int) $this->perPage);
+
         return [
-            'mahasiswa' => Mahasiswa::with('jurusan:id,nama_jurusan')->latest()->paginate($this->perPage),
+            'mahasiswa' => Mahasiswa::with('jurusan:id,nama_jurusan')->latest()->paginate($perPage),
+            'jurusan' => Jurusan::select('id', 'nama_jurusan')->orderBy('nama_jurusan')->get(),
         ];
     }
 
@@ -44,6 +105,72 @@ new class extends Component {
                         Tambah Mahasiswa
                     </a>
                 </div>
+
+                @if (session()->has('success'))
+                    <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if (session()->has('error'))
+                    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                @if ($editingId)
+                    <div class="mb-8 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+                        <div class="mb-5 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-[#435b9f]">edit</span>
+                            <h3 class="font-manrope text-xl font-bold text-[#00113a]">Edit Data Mahasiswa</h3>
+                        </div>
+
+                        <form wire:submit.prevent="update" class="grid grid-cols-1 gap-5 md:grid-cols-3">
+                            <div>
+                                <label class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#444650]">Nama Lengkap</label>
+                                <input type="text" wire:model="nama_mahasiswa"
+                                    class="w-full rounded-lg border-none bg-[#e6e8ea] px-4 py-3 text-sm font-medium text-[#00113a] transition-all focus:bg-white focus:ring-2 focus:ring-[#435b9f]/30">
+                                @error('nama_mahasiswa')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#444650]">NIM</label>
+                                <input type="text" wire:model="nim" inputmode="numeric"
+                                    class="w-full rounded-lg border-none bg-[#e6e8ea] px-4 py-3 text-sm font-medium text-[#00113a] transition-all focus:bg-white focus:ring-2 focus:ring-[#435b9f]/30">
+                                @error('nim')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#444650]">Jurusan</label>
+                                <select wire:model="id_jurusan"
+                                    class="w-full rounded-lg border-none bg-[#e6e8ea] px-4 py-3 text-sm font-medium text-[#00113a] transition-all focus:bg-white focus:ring-2 focus:ring-[#435b9f]/30">
+                                    <option value="">Pilih Jurusan</option>
+                                    @foreach ($jurusan as $jur)
+                                        <option value="{{ $jur->id }}">{{ $jur->nama_jurusan }}</option>
+                                    @endforeach
+                                </select>
+                                @error('id_jurusan')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 md:col-span-3">
+                                <button type="button" wire:click="cancelEdit"
+                                    class="rounded-lg px-5 py-3 text-sm font-bold text-[#00113a] transition-opacity hover:opacity-70">
+                                    Batal
+                                </button>
+                                <button type="submit"
+                                    class="rounded-lg bg-gradient-to-br from-[#00113a] to-[#002366] px-7 py-3 text-sm font-bold text-white transition-all hover:shadow-lg active:scale-95">
+                                    Simpan Perubahan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
 
                 <!-- Table Container (light card style) -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -78,7 +205,6 @@ new class extends Component {
                                     class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#757682] text-sm">sort_by_alpha</span>
                                 <select wire:model.live="perPage"
                                     class="w-full bg-[#f2f4f6] border-none rounded-lg py-2.5 pl-10 pr-4 text-xs font-semibold text-[#191c1e] focus:ring-2 focus:ring-[#435b9f]/30 appearance-none">
-                                    <option value="0">Jumlah Menampilkan Data</option>
                                     <option value="5">5 Data</option>
                                     <option value="10">10 Data</option>
                                     <option value="50">50 Data</option>
@@ -137,7 +263,7 @@ new class extends Component {
                                         </td>
 
                                         <td class="px-6 py-5 text-sm text-[#191c1e]">
-                                            {{ $data->jurusan->nama_jurusan }}
+                                            {{ $data->jurusan?->nama_jurusan ?? '-' }}
                                         </td>
 
                                         <td class="px-6 py-5">
@@ -150,10 +276,13 @@ new class extends Component {
                                         <td class="px-6 py-5 text-right">
                                             <div class="flex items-center justify-end gap-2">
                                                 <button
+                                                    wire:click="edit({{ $data->id }})"
                                                     class="p-2 hover:bg-white rounded-lg text-[#00113a] transition-colors">
                                                     <span class="material-symbols-outlined text-lg">edit</span>
                                                 </button>
                                                 <button
+                                                    wire:click="delete({{ $data->id }})"
+                                                    wire:confirm="Hapus data mahasiswa ini?"
                                                     class="p-2 hover:bg-[#ffdad6] rounded-lg text-[#ba1a1a] transition-colors">
                                                     <span class="material-symbols-outlined text-lg">delete</span>
                                                 </button>

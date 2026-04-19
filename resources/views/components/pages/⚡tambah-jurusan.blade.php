@@ -10,26 +10,60 @@ new #[Layout('layouts.afterLogin')] class extends Component {
 
     public $nama_jurusan;
     public $akreditasi;
+    public $editingId = null;
 
     public function cancel()
     {
-        $this->nama_jurusan = '';
-        $this->akreditasi = '';
+        $this->reset(['nama_jurusan', 'akreditasi', 'editingId']);
+        $this->resetValidation();
     }
 
     public function store()
     {
-        $this->validate([
+        $validated = $this->validate([
             'nama_jurusan' => 'required|string|min:3',
             'akreditasi' => 'required|string|in:A,B,AB,C',
         ]);
 
-        Jurusan::create([
-            'nama_jurusan' => $this->nama_jurusan,
-            'akreditasi' => $this->akreditasi,
-        ]);
+        if ($this->editingId) {
+            Jurusan::findOrFail($this->editingId)->update($validated);
+            session()->flash('success', 'Jurusan berhasil diperbarui.');
+        } else {
+            Jurusan::create($validated);
+            session()->flash('success', 'Jurusan berhasil ditambahkan.');
+        }
 
-        return redirect()->to('/admin/jurusan')->with('success', 'Jurusan Berhasil Ditambahkan');
+        $this->cancel();
+        $this->resetPage();
+    }
+
+    public function edit($id)
+    {
+        $jurusan = Jurusan::findOrFail($id);
+
+        $this->editingId = $jurusan->id;
+        $this->nama_jurusan = $jurusan->nama_jurusan;
+        $this->akreditasi = $jurusan->akreditasi;
+        $this->resetValidation();
+    }
+
+    public function delete($id)
+    {
+        $jurusan = Jurusan::findOrFail($id);
+
+        if ($jurusan->mahasiswa()->exists() || $jurusan->matakuliah()->exists()) {
+            session()->flash('error', 'Jurusan tidak bisa dihapus karena masih dipakai oleh mahasiswa atau mata kuliah.');
+            return;
+        }
+
+        $jurusan->delete();
+
+        if ((int) $this->editingId === (int) $id) {
+            $this->cancel();
+        }
+
+        $this->resetPage();
+        session()->flash('success', 'Jurusan berhasil dihapus.');
     }
 
     public function with(): array
@@ -55,9 +89,22 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                 <p class="text-[#758dd5] font-semibold tracking-[0.2em] text-xs uppercase mb-2">Learning
                     MyCampus
                 </p>
-                <h1 class="text-5xl font-extrabold tracking-tight text-[#00113a] mb-4 font-headline">Tambah
-                    Jurusan</h1>
+                <h1 class="text-5xl font-extrabold tracking-tight text-[#00113a] mb-4 font-headline">
+                    {{ $editingId ? 'Edit Jurusan' : 'Tambah Jurusan' }}
+                </h1>
             </div>
+
+            @if (session()->has('success'))
+                <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                    {{ session('error') }}
+                </div>
+            @endif
 
             <!-- Main Asymmetric Layout -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mb-10">
@@ -74,6 +121,9 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                 <input type="text" placeholder="e.g. Digital Humanities &amp; Arts"
                                     wire:model="nama_jurusan"
                                     class="w-full bg-[#e6e8ea] border-none border-b-2 border-transparent focus:border-[#435b9f] focus:ring-0 focus:bg-white transition-all px-4 py-4 rounded-lg text-[#00113a] font-medium placeholder:text-slate-400">
+                                @error('nama_jurusan')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <!-- Faculty and Head of Department -->
@@ -90,6 +140,9 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                         <option value="B">B (cukup baik)</option>
                                         <option value="C">C (kurang baik)</option>
                                     </select>
+                                    @error('akreditasi')
+                                        <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                    @enderror
                                 </div>
                             </div>
 
@@ -102,7 +155,7 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                 Changes</button>
                             <button type="submit"
                                 class="bg-gradient-to-br from-[#00113a] to-[#002366] text-white px-8 py-4 rounded-lg font-bold text-sm hover:shadow-lg transition-all active:scale-95">
-                                Create Department
+                                {{ $editingId ? 'Update Department' : 'Create Department' }}
                             </button>
                         </div>
                     </form>
@@ -154,10 +207,13 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                 <td class="px-6 py-5 text-right">
                                     <div class="flex items-center justify-end gap-2 opacity-100 transition-opacity">
                                         <button class="p-2 hover:bg-white rounded-lg text-[#435b9f] transition-all"
+                                            wire:click="edit({{ $jur->id }})"
                                             title="Edit">
                                             <span class="material-symbols-outlined text-lg">edit_note</span>
                                         </button>
                                         <button class="p-2 hover:bg-[#ffdad6] rounded-lg text-[#ba1a1a] transition-all"
+                                            wire:click="delete({{ $jur->id }})"
+                                            wire:confirm="Hapus jurusan ini?"
                                             title="Delete">
                                             <span class="material-symbols-outlined text-lg">delete</span>
                                         </button>
@@ -167,7 +223,7 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                         @empty
                             <tr>
                                 <td colspan="5" class="px-6 py-8 text-center text-sm text-[#444650]">
-                                    Data mata kuliah belum ada.
+                                    Data jurusan belum ada.
                                 </td>
                             </tr>
                         @endforelse

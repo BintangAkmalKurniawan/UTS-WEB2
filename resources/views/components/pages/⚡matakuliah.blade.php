@@ -11,22 +11,55 @@ new #[Layout('layouts.afterLogin')] class extends Component {
     public $nama_matakuliah;
     public $id_jurusan;
     public $sks;
+    public $editingId = null;
 
     public function store()
     {
-        $this->validate([
+        $validated = $this->validate([
             'nama_matakuliah' => 'required|string|min:3',
             'id_jurusan' => 'required|exists:jurusan,id',
-            'sks' => 'required|numeric|digits_between:1,3',
+            'sks' => 'required|integer|min:1|max:8',
         ]);
 
-        Matakuliah::create([
-            'nama_matakuliah' => $this->nama_matakuliah,
-            'id_jurusan' => $this->id_jurusan,
-            'sks' => $this->sks,
-        ]);
+        if ($this->editingId) {
+            Matakuliah::findOrFail($this->editingId)->update($validated);
+            session()->flash('success', 'Mata kuliah berhasil diperbarui.');
+        } else {
+            Matakuliah::create($validated);
+            session()->flash('success', 'Mata kuliah berhasil ditambahkan.');
+        }
 
-        return redirect()->to('/admin/matakuliah')->with('success', 'Mata Kuliah Berhasil Ditambahkan');
+        $this->cancel();
+        $this->resetPage();
+    }
+
+    public function edit($id)
+    {
+        $matakuliah = Matakuliah::findOrFail($id);
+
+        $this->editingId = $matakuliah->id;
+        $this->nama_matakuliah = $matakuliah->nama_matakuliah;
+        $this->id_jurusan = $matakuliah->id_jurusan;
+        $this->sks = $matakuliah->sks;
+        $this->resetValidation();
+    }
+
+    public function cancel()
+    {
+        $this->reset(['editingId', 'nama_matakuliah', 'id_jurusan', 'sks']);
+        $this->resetValidation();
+    }
+
+    public function delete($id)
+    {
+        Matakuliah::findOrFail($id)->delete();
+
+        if ((int) $this->editingId === (int) $id) {
+            $this->cancel();
+        }
+
+        $this->resetPage();
+        session()->flash('success', 'Mata kuliah berhasil dihapus.');
     }
 
     public function with()
@@ -51,9 +84,21 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                     MyCampus
                 </p>
                 <h3 class="text-5xl font-black font-headline text-[#00113a] leading-tight tracking-tighter">
-                    Manajemen Mata Kuliah
+                    {{ $editingId ? 'Edit Mata Kuliah' : 'Manajemen Mata Kuliah' }}
                 </h3>
             </section>
+
+            @if (session()->has('success'))
+                <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if (session()->has('error'))
+                <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                    {{ session('error') }}
+                </div>
+            @endif
 
             <!-- Grid Layout for Form and Decorative Element -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -62,7 +107,9 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                 <div class="lg:col-span-2 bg-white rounded-xl p-8 shadow-sm border border-slate-100">
                     <div class="flex items-center gap-3 mb-8">
                         <span class="material-symbols-outlined text-[#435b9f]">post_add</span>
-                        <h4 class="font-headline font-bold text-xl text-[#00113a]">Registrasi Mata Kuliah Baru</h4>
+                        <h4 class="font-headline font-bold text-xl text-[#00113a]">
+                            {{ $editingId ? 'Ubah Data Mata Kuliah' : 'Registrasi Mata Kuliah Baru' }}
+                        </h4>
                     </div>
                     <form class="space-y-6" wire:submit.prevent="store">
                         <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
@@ -72,6 +119,9 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                     Kuliah</label>
                                 <input type="text" placeholder="Ex: Kecerdasan Buatan" wire:model="nama_matakuliah"
                                     class="w-full bg-[#e6e8ea] border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#435b9f]/30 focus:bg-white transition-all font-body text-sm">
+                                @error('nama_matakuliah')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -87,7 +137,12 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                     <option value="4">4 SKS</option>
                                     <option value="5">5 SKS</option>
                                     <option value="6">6 SKS</option>
+                                    <option value="7">7 SKS</option>
+                                    <option value="8">8 SKS</option>
                                 </select>
+                                @error('sks')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
                             </div>
                             <div class="space-y-2">
                                 <label
@@ -100,13 +155,22 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                     @endforeach
 
                                 </select>
+                                @error('id_jurusan')
+                                    <p class="mt-2 text-xs font-semibold text-[#ba1a1a]">{{ $message }}</p>
+                                @enderror
                             </div>
 
                         </div>
-                        <div class="pt-4 flex justify-end">
+                        <div class="pt-4 flex justify-end gap-3">
+                            @if ($editingId)
+                                <button type="button" wire:click="cancel"
+                                    class="px-6 py-3 text-sm font-bold text-[#00113a] transition-opacity hover:opacity-70">
+                                    Batal
+                                </button>
+                            @endif
                             <button type="submit"
                                 class="bg-gradient-to-br from-[#00113a] to-[#002366] text-white px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:shadow-xl transition-all active:scale-95">
-                                <span>Simpan Mata Kuliah</span>
+                                <span>{{ $editingId ? 'Update Mata Kuliah' : 'Simpan Mata Kuliah' }}</span>
                                 <span class="material-symbols-outlined text-sm">send</span>
                             </button>
                         </div>
@@ -147,7 +211,8 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                         <tbody class="divide-y divide-[#c5c6d2]/20">
                             <!-- Data Mata Kuliah -->
                             @forelse ($dataMataKuliah as $matkul)
-                                <tr class="bg-white/40 hover:bg-white/80 transition-colors group">
+                                <tr class="bg-white/40 hover:bg-white/80 transition-colors group"
+                                    wire:key="matakuliah-{{ $matkul->id }}">
                                     <td class="px-6 py-5 font-headline font-bold text-[#00113a]">CS-{{ $matkul->id }}
                                     </td>
                                     <td class="px-6 py-5">
@@ -161,16 +226,19 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e6e8ea] text-[#00113a]">{{ $matkul->sks }}
                                             SKS</span>
                                     </td>
-                                    <td class="px-6 py-5 text-sm text-[#444650]">{{ $matkul->jurusan->nama_jurusan }}
+                                    <td class="px-6 py-5 text-sm text-[#444650]">{{ $matkul->jurusan?->nama_jurusan ?? '-' }}
                                     </td>
                                     <td class="px-6 py-5 text-right">
                                         <div class="flex items-center justify-end gap-2 opacity-100 transition-opacity">
                                             <button class="p-2 hover:bg-white rounded-lg text-[#435b9f] transition-all"
+                                                wire:click="edit({{ $matkul->id }})"
                                                 title="Edit">
                                                 <span class="material-symbols-outlined text-lg">edit_note</span>
                                             </button>
                                             <button
                                                 class="p-2 hover:bg-[#ffdad6] rounded-lg text-[#ba1a1a] transition-all"
+                                                wire:click="delete({{ $matkul->id }})"
+                                                wire:confirm="Hapus mata kuliah ini?"
                                                 title="Delete">
                                                 <span class="material-symbols-outlined text-lg">delete</span>
                                             </button>
