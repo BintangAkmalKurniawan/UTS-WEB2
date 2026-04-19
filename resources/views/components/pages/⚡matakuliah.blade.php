@@ -89,13 +89,15 @@ new #[Layout('layouts.afterLogin')] class extends Component {
             </section>
 
             @if (session()->has('success'))
-                <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+                <div
+                    class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if (session()->has('error'))
-                <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                <div
+                    class="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
                     {{ session('error') }}
                 </div>
             @endif
@@ -182,10 +184,7 @@ new #[Layout('layouts.afterLogin')] class extends Component {
             <section class="space-y-6 mt-20">
                 <div class="flex items-center justify-between">
                     <h4 class="font-headline font-bold text-2xl text-[#00113a]">Daftar Mata Kuliah Terdaftar</h4>
-                    <button class="text-[#435b9f] font-bold text-sm flex items-center gap-1 hover:underline">
-                        <span class="material-symbols-outlined text-sm">download</span>
-                        Export PDF
-                    </button>
+
                 </div>
                 <div class="bg-[#eceef0] rounded-xl overflow-hidden shadow-sm">
                     <table class="w-full text-left border-collapse">
@@ -226,20 +225,19 @@ new #[Layout('layouts.afterLogin')] class extends Component {
                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#e6e8ea] text-[#00113a]">{{ $matkul->sks }}
                                             SKS</span>
                                     </td>
-                                    <td class="px-6 py-5 text-sm text-[#444650]">{{ $matkul->jurusan?->nama_jurusan ?? '-' }}
+                                    <td class="px-6 py-5 text-sm text-[#444650]">
+                                        {{ $matkul->jurusan?->nama_jurusan ?? '-' }}
                                     </td>
                                     <td class="px-6 py-5 text-right">
                                         <div class="flex items-center justify-end gap-2 opacity-100 transition-opacity">
                                             <button class="p-2 hover:bg-white rounded-lg text-[#435b9f] transition-all"
-                                                wire:click="edit({{ $matkul->id }})"
-                                                title="Edit">
+                                                wire:click="edit({{ $matkul->id }})" title="Edit">
                                                 <span class="material-symbols-outlined text-lg">edit_note</span>
                                             </button>
                                             <button
                                                 class="p-2 hover:bg-[#ffdad6] rounded-lg text-[#ba1a1a] transition-all"
                                                 wire:click="delete({{ $matkul->id }})"
-                                                wire:confirm="Hapus mata kuliah ini?"
-                                                title="Delete">
+                                                wire:confirm="Hapus mata kuliah ini?" title="Delete">
                                                 <span class="material-symbols-outlined text-lg">delete</span>
                                             </button>
                                         </div>
