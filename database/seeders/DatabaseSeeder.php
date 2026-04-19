@@ -21,12 +21,12 @@ class DatabaseSeeder extends Seeder
     {
         $jurusans = Jurusan::factory(3)->create();
 
-        Mahasiswa::factory(10)->make()->each(function ($mahasiswa) use ($jurusans) {
+        Mahasiswa::factory(3)->make()->each(function ($mahasiswa) use ($jurusans) {
             $mahasiswa->id_jurusan = $jurusans->random()->id;
             $mahasiswa->save();
         });
 
-        Matakuliah::factory(10)->make()->each(function ($matakuliah) use ($jurusans) {
+        Matakuliah::factory(3)->make()->each(function ($matakuliah) use ($jurusans) {
             $matakuliah->id_jurusan = $jurusans->random()->id;
             $matakuliah->save();
         });
