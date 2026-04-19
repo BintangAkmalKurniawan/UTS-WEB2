@@ -19,14 +19,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $jurusans = Jurusan::factory(20)->create();
+        $jurusans = Jurusan::factory(3)->create();
 
-        Mahasiswa::factory(100)->make()->each(function ($mahasiswa) use ($jurusans) {
+        Mahasiswa::factory(10)->make()->each(function ($mahasiswa) use ($jurusans) {
             $mahasiswa->id_jurusan = $jurusans->random()->id;
             $mahasiswa->save();
         });
 
-        Matakuliah::factory(100)->make()->each(function ($matakuliah) use ($jurusans) {
+        Matakuliah::factory(10)->make()->each(function ($matakuliah) use ($jurusans) {
             $matakuliah->id_jurusan = $jurusans->random()->id;
             $matakuliah->save();
         });
