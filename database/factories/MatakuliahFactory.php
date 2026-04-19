@@ -20,7 +20,7 @@ class MatakuliahFactory extends Factory
     {
         return [
             'nama_matakuliah' => $this->faker->name(),
-            'id_jurusan' => Jurusan::factory(),
+            'id_jurusan' => Jurusan::query()->inRandomOrder()->value('id') ?? Jurusan::factory(),
             'sks' => $this->faker->numberBetween(1, 8),
         ];
     }

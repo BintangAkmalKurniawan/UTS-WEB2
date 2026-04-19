@@ -21,7 +21,7 @@ class MahasiswaFactory extends Factory
         return [
             'nim' => $this->faker->unique()->numerify('##########'),
             'nama' => $this->faker->name(),
-            'id_jurusan' => Jurusan::factory(),
+            'id_jurusan' => Jurusan::query()->inRandomOrder()->value('id') ?? Jurusan::factory(),
         ];
     }
 }
