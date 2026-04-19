@@ -19,7 +19,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $jurusans = Jurusan::factory(3)->create();
+        $jurusans = collect([
+            ['nama_jurusan' => 'Teknik Informatika', 'akreditasi' => 'A'],
+            ['nama_jurusan' => 'Sistem Informasi', 'akreditasi' => 'AB'],
+            ['nama_jurusan' => 'Manajemen Informatika', 'akreditasi' => 'B'],
+        ])->map(function (array $jurusan) {
+            return Jurusan::updateOrCreate(
+                ['nama_jurusan' => $jurusan['nama_jurusan']],
+                ['akreditasi' => $jurusan['akreditasi']],
+            );
+        });
 
         Mahasiswa::factory(3)->make()->each(function ($mahasiswa) use ($jurusans) {
             $mahasiswa->id_jurusan = $jurusans->random()->id;
@@ -31,9 +40,10 @@ class DatabaseSeeder extends Seeder
             $matakuliah->save();
         });
 
-        User::factory()->create([
-            'name' => 'akmal',
+        User::updateOrCreate([
             'email' => 'akmal@gmail.com',
+        ], [
+            'name' => 'akmal',
             'password' => Hash::make('password')
         ]);
     }

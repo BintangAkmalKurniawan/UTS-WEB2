@@ -4,6 +4,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
 use App\Models\Jurusan;
+use Illuminate\Validation\Rule;
 
 new #[Layout('layouts.afterLogin')] class extends Component {
     use WithPagination;
@@ -21,7 +22,12 @@ new #[Layout('layouts.afterLogin')] class extends Component {
     public function store()
     {
         $validated = $this->validate([
-            'nama_jurusan' => 'required|string|min:3',
+            'nama_jurusan' => [
+                'required',
+                'string',
+                'min:3',
+                Rule::unique('jurusan', 'nama_jurusan')->ignore($this->editingId),
+            ],
             'akreditasi' => 'required|string|in:A,B,AB,C',
         ]);
 

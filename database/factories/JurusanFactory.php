@@ -10,6 +10,29 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class JurusanFactory extends Factory
 {
+    private const NAMA_JURUSAN = [
+        'Teknik Informatika',
+        'Sistem Informasi',
+        'Manajemen Informatika',
+        'Teknik Komputer',
+        'Desain Komunikasi Visual',
+        'Teknik Elektro',
+        'Teknik Industri',
+        'Akuntansi',
+        'Manajemen',
+        'Bisnis Digital',
+        'Ilmu Komunikasi',
+        'Administrasi Bisnis',
+        'Teknik Sipil',
+        'Arsitektur',
+        'Pendidikan Matematika',
+        'Pendidikan Bahasa Inggris',
+        'Hukum',
+        'Psikologi',
+        'Keperawatan',
+        'Farmasi',
+    ];
+
     /**
      * Define the model's default state.
      *
@@ -18,13 +41,7 @@ class JurusanFactory extends Factory
     public function definition(): array
     {
         return [
-            'nama_jurusan' => $this->faker->randomElement([
-                'Teknik Informatika',
-                'Sistem Informasi',
-                'Manajemen Informatika',
-                'Teknik Komputer',
-                'Desain Komunikasi Visual',
-            ]),
+            'nama_jurusan' => $this->faker->unique()->randomElement(self::NAMA_JURUSAN),
             'akreditasi' => $this->faker->randomElement(['A', 'B', 'AB', 'C']),
         ];
     }
