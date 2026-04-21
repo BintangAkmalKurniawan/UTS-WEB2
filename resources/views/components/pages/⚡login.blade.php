@@ -3,6 +3,9 @@
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 new #[Layout('layouts.app')] class extends Component {
     public $email;
@@ -10,16 +13,39 @@ new #[Layout('layouts.app')] class extends Component {
 
     public function authenticate()
     {
-        $validated = $this->validate([
+        $this->validate([
             'email' => 'required|email',
-            'password' => 'required|min:8',
+            'password' => 'required|string',
         ]);
 
-        if (Auth::attempt($validated)) {
-            return redirect()->to('/admin/dashboard')->with('success', 'Login Berhasil');
+        $key = Str::lower($this->email) . '|' . request()->ip();
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+
+            throw ValidationException::withMessages([
+                'email' => 'Terlalu banyak percobaan login. Coba lagi dalam ' . $seconds . ' detik.',
+            ]);
         }
 
-        return redirect()->to('/')->with('error', 'Login Gagal');
+        $credentials = [
+            'email' => Str::lower($this->email),
+            'password' => $this->password,
+        ];
+
+        if (!Auth::attempt($credentials)) {
+            RateLimiter::hit($key, 60);
+
+            $this->reset('email', 'password');
+            throw ValidationException::withMessages([
+                'email' => 'Email atau password salah',
+            ]);
+        }
+
+        RateLimiter::clear($key);
+        request()->session()->regenerate();
+
+        return redirect()->intended('/admin/dashboard')->with('succes', 'Login Berhasil');
     }
 };
 ?>
@@ -108,6 +134,12 @@ new #[Layout('layouts.app')] class extends Component {
                         class="w-full bg-gradient-to-br from-[#00113a] to-[#002366] text-white py-4 rounded-xl font-headline font-bold text-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#435b9f] focus:ring-offset-2">
                         Sign In
                     </button>
+                    <div class="text-center">
+                        @if (session()->has('error'))
+                            <span class="text-red-400 ">{{ session('error') }}</span>
+                        @endif
+                    </div>
+
                 </form>
 
             </div>

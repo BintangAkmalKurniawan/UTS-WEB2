@@ -122,12 +122,6 @@ new #[Layout('layouts.afterLogin')] class extends Component {
             </section>
         </div>
     </main>
-
-    <!-- Floating Action Button -->
-    <button
-        class="fixed bottom-8 right-8 w-16 h-16 bg-[#00113a] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-50">
-        <span class="material-symbols-outlined text-2xl">add</span>
-    </button>
 </div>
 
 @push('scripts')
