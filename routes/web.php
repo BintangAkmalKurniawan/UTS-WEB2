@@ -7,6 +7,9 @@ Route::middleware('auth')->group(function () {
                     Route::livewire('/admin/dashboard', 'pages.dashboard')->name('dashboard');
                     Route::livewire('/admin/tambah-mahasiswa', 'pages.tambah-mahasiswa')->name('tambah-mahasiswa');
                     Route::livewire('/admin/mahasiswa', 'pages.data-mahasiswa')->name('data-mahasiswa');
+                    Route::livewire('/admin/mahasiswa/print', 'pages.mahasiswa-print')->name('mahasiswa-print');
                     Route::livewire('/admin/jurusan', 'pages.tambah-jurusan')->name('tambah-jurusan');
                     Route::livewire('/admin/matakuliah', 'pages.matakuliah')->name('matakuliah');
+
+                    // Route::livewire('/mahasiswa/export-csv', )
 });

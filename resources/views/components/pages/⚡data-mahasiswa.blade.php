@@ -130,11 +130,18 @@ new class extends Component {
                         <h2 class="text-5xl font-extrabold font-manrope tracking-tight text-[#00113a]">Data Mahasiswa
                         </h2>
                     </div>
-                    <a href="{{ route('tambah-mahasiswa') }}"
-                        class="bg-gradient-to-br from-[#00113a] to-[#002366] text-white px-8 py-3 rounded-md font-manrope font-semibold text-sm hover:shadow-lg transition-all flex items-center gap-2 active:scale-95">
-                        <span class="material-symbols-outlined text-lg">person_add</span>
-                        Tambah Mahasiswa
-                    </a>
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <a href="{{ route('mahasiswa-print') }}#print" target="_blank" rel="noopener"
+                            class="flex items-center justify-center gap-2 rounded-md border border-[#c5c6d2] bg-white px-8 py-3 text-sm font-semibold text-[#00113a] transition-all hover:shadow-lg active:scale-95">
+                            <span class="material-symbols-outlined text-lg">print</span>
+                            Cetak Data
+                        </a>
+                        <a href="{{ route('tambah-mahasiswa') }}"
+                            class="bg-gradient-to-br from-[#00113a] to-[#002366] text-white px-8 py-3 rounded-md font-manrope font-semibold text-sm hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95">
+                            <span class="material-symbols-outlined text-lg">person_add</span>
+                            Tambah Mahasiswa
+                        </a>
+                    </div>
                 </div>
 
                 @if (session()->has('success'))
